@@ -16,7 +16,7 @@ namespace EZInfiniteYTLive
         {
             InitializeComponent();
             StatusLabel.Text = "Idle";
-            Form1.ActiveForm.Text = "EZ Infinite YT Live - Idle";
+            this.Text = "EZ Infinite YT Live - Idle";
             this.FormClosed += (s, e) =>
             {
                 if (_streamer != null)
@@ -63,7 +63,7 @@ namespace EZInfiniteYTLive
             StartButton.Enabled = false;
             ForceStopButton.Enabled = true;
             //change form1 title
-            Form1.ActiveForm.Text = "EZ Infinite YT Live - Streaming";
+            this.Text = "EZ Infinite YT Live - Streaming";
             _streamer.StartStreaming();
         }
 
@@ -76,7 +76,7 @@ namespace EZInfiniteYTLive
                 _streamer = null;
             }
             StatusLabel.Text = "Stopped";
-            Form1.ActiveForm.Text = "EZ Infinite YT Live - Stopped";
+            this.Text = "EZ Infinite YT Live - Stopped";
             StartButton.Enabled = true;
             ForceStopButton.Enabled = false;
         }
