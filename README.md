@@ -1,4 +1,15 @@
 # EZInfiniteYTLive
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=havaianasdestruido%2FEZInfiniteYTLive&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=havaianasdestruido/EZInfiniteYTLive&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=havaianasdestruido/EZInfiniteYTLive&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=havaianasdestruido/EZInfiniteYTLive&type=date&legend=top-left" />
+ </picture>
+</a>
+
 Easy to use tool to make 24/7 livestreams, supporting even non-YouTube RMTP services.
 
 Only requires FFMPEG to be installed (on PATH, but i guess it does that by default too).
