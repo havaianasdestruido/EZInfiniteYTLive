@@ -1,0 +1,8 @@
+{
+  "label": "Architecture",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "How EZInfiniteYTLive is structured internally: the project layout, the UI/streaming split, and the FFmpeg process lifecycle."
+  }
+}
