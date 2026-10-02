@@ -22,3 +22,17 @@ Only requires FFMPEG to be installed (on PATH, but i guess it does that by defau
 `RandOrder?` -> random order.
 
 `AlphabeticOrder?` -> alphabetic order. (considering each file name)
+
+## Documentation
+
+Full codebase documentation (architecture, usage guide, API reference, configuration, CI/CD, and contributing guide) is available as a [Docusaurus](https://docusaurus.io/) site in the [`website/`](website) directory.
+
+To run it locally:
+
+```bash
+cd website
+npm install
+npm start
+```
+
+Then open http://localhost:3000 in your browser. See [`website/docs/intro.md`](website/docs/intro.md) to start reading without running the site.
