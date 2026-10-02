@@ -59,7 +59,7 @@ public Form1()
 
 - Calls `InitializeComponent()` to build the designer-defined UI.
 - Initializes the status label and window title to reflect an idle state.
-- Registers a `FormClosed` handler that disposes the active `VideoStreamer` (which also stops the FFmpeg process) when the window is closed, preventing orphaned FFmpeg processes.
+- Registers a `FormClosed` handler that disposes the active `VideoStreamer` when the window is closed. Disposal requests a stop (`_stopRequested = true`) and kills whichever FFmpeg process is already assigned to `_ffmpegProcess` at that moment — see [`VideoStreamer.StopStreaming()`](./video-streamer.md#stopstreaming) for the startup race that means this doesn't *guarantee* an in-flight FFmpeg process is cleaned up if disposal happens to race with a new file starting.
 - Defaults the playback order to **alphabetic** by checking `AlphabeticOrderRadio`.
 
 ## Event handlers

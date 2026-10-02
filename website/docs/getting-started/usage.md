@@ -27,13 +27,17 @@ The application window exposes the following controls (see [`Form1.Designer.cs`]
 
 ### 1. Choose your videos
 
-Click **Choose Videos** and select the folder that contains the video files you want to loop. The folder can contain any mix of the following extensions (defined in [`VideoStreamer.cs`](../api-reference/video-streamer.md)):
+Click **Choose Videos** and select a folder that contains **at least one** video file with one of the following extensions (defined in [`VideoStreamer.cs`](../api-reference/video-streamer.md)); the folder can contain any mix of them:
 
 ```
 .mp4  .mkv  .avi  .mov  .flv
 ```
 
 The status label updates to show the selected path, e.g. `Selected: C:\Videos\LoopFolder`.
+
+:::caution
+If the selected folder contains **no** files with a supported extension, `StreamVideos()` finds an empty file list and returns immediately without ever starting FFmpeg. However, `StartButton_Click` has already updated the UI to the "Streaming..." state (status label, window title, **START** disabled, **STOP** enabled) before this is discovered, so the window will appear to be streaming even though nothing is actually being sent to the RTMP destination. Click **STOP** to reset the UI if this happens, and double-check the folder actually contains supported video files.
+:::
 
 :::tip
 Files are matched purely by name within the folder (non-recursive — subfolders are not scanned).

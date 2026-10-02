@@ -33,7 +33,7 @@ const FeatureList: FeatureItem[] = [
     ),
   },
   {
-    title: 'Lightweight &amp; FFmpeg-Powered',
+    title: 'Lightweight & FFmpeg-Powered',
     emoji: '🪶',
     description: (
       <>

@@ -53,7 +53,7 @@ This is exactly what the project's CI workflow does — see [CI/CD](./ci-cd.md).
 
 ## Building with Visual Studio
 
-1. Open `EZInfiniteYTLive.sln` in Visual Studio (2019 or later, with the **.NET desktop development** workload installed).
+1. Open `EZInfiniteYTLive.sln` in **Visual Studio 2022 version 17.3 or later** (required to target .NET Framework 4.8.1), with the **.NET desktop development** workload and the **.NET Framework 4.8.1 Developer Pack** installed.
 2. Select a configuration/platform (e.g. `Release` / `Any CPU`) from the toolbar.
 3. Build via **Build → Build Solution** (<kbd>Ctrl+Shift+B</kbd>) or run directly with <kbd>F5</kbd> / <kbd>Ctrl+F5</kbd>.
 

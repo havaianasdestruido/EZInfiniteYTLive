@@ -77,8 +77,8 @@ try
 catch { }
 ```
 
-- Setting `_stopRequested = true` ensures the loop will exit *after* the current `RunFfmpeg` call returns.
-- Killing the process is what makes stopping **immediate** rather than waiting for the current file to finish playing — without this, `WaitForExit()` inside `RunFfmpeg` would block until the file naturally ends.
+- Setting `_stopRequested = true` requests that the loop exit after the current `RunFfmpeg` call returns — it does **not** prevent an iteration that already passed the `while (!_stopRequested)` check from starting a new `RunFfmpeg`/FFmpeg process.
+- Killing the process is what makes stopping **immediate** rather than waiting for the current file to finish playing — without this, `WaitForExit()` inside `RunFfmpeg` would block until the file naturally ends. However, this only takes effect once `_ffmpegProcess` has been (re)assigned to the process that's actually running; if `StopStreaming()` is called in the brief window after a loop iteration starts but before `RunFfmpeg` has assigned the new `Process` to `_ffmpegProcess`, the kill can miss it (acting on the previous, already-exited process instead), and that file will run to completion before the loop observes `_stopRequested` on its next check.
 - Exceptions from `Kill()` (e.g. the process already exited in a race) are intentionally swallowed.
 
 ### `Dispose()`
@@ -146,4 +146,4 @@ These are useful starting points if you want to [contribute](../contributing.md)
 3. **No logging/surfacing of FFmpeg errors.** `RunFfmpeg` redirects FFmpeg's stdout/stderr but doesn't log, display, or otherwise react to it — if FFmpeg fails immediately for a given file (e.g. unsupported codec), the loop simply advances to the next file with no user-visible diagnostic.
 4. **`-stream_loop 1` plays each file twice per cycle.** Combined with the outer `while` loop in `StreamVideos()`, each file is effectively played twice before the file list advances. This may or may not be intentional; worth confirming against your expected behavior.
 5. **Non-recursive folder scan.** Subfolders of the selected directory are ignored.
-6. **No FFmpeg path validation.** If FFmpeg isn't installed or isn't on `PATH`, `Process.Start()` will throw a `Win32Exception`, which is not currently caught around `RunFfmpeg`/`StreamVideos` — this would currently crash the background thread silently (no user-facing error).
+6. **No FFmpeg path validation.** If FFmpeg isn't installed or isn't on `PATH`, `Process.Start()` will throw a `Win32Exception`, which is not currently caught around `RunFfmpeg`/`StreamVideos`. Since there's no global unhandled-exception handling in `Program`/`Form1`, this exception on the background thread can terminate the entire application rather than failing with a user-facing error message.

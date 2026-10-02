@@ -44,7 +44,7 @@ The main entry point for the application (`"Ponto de entrada principal para o ap
 
 - **`[STAThread]`** — marks the thread as Single-Threaded Apartment, required for WinForms/COM interop (clipboard, drag-and-drop, common dialogs like `FolderBrowserDialog`).
 - **`Application.EnableVisualStyles()`** — enables visual styles (theming) for Windows common controls, so the UI matches the current Windows theme rather than rendering as classic/unstyled controls.
-- **`Application.SetCompatibleTextRenderingDefault(false)`** — configures text rendering to use GDI+ (`TextRenderer`/GDI) instead of the older compatible mode, recommended default for modern WinForms apps.
+- **`Application.SetCompatibleTextRenderingDefault(false)`** — configures text rendering to use `TextRenderer`/GDI instead of the older GDI+-based compatible mode, recommended default for modern WinForms apps.
 - **`Application.Run(new Form1())`** — creates the main window ([`Form1`](./form1.md)) and starts the Windows message loop, blocking until the form is closed.
 
 ## Responsibilities

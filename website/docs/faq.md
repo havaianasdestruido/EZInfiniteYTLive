@@ -14,7 +14,7 @@ No. The UI is built with Windows Forms (`System.Windows.Forms`) targeting .NET F
 
 Check, in order:
 
-1. **Is FFmpeg actually installed and on `PATH`?** Open a terminal and run `ffmpeg -version`. The app invokes FFmpeg as plain `ffmpeg.exe` (see [`Form1._ffmpegPath`](./api-reference/form1.md#fields)), so if it isn't resolvable on `PATH`, the background thread fails silently (see [Known Limitations](./api-reference/video-streamer.md#known-limitations)).
+1. **Is FFmpeg actually installed and on `PATH`?** Open a terminal and run `ffmpeg -version`. The app invokes FFmpeg as plain `ffmpeg.exe` (see [`Form1._ffmpegPath`](./api-reference/form1.md#fields)), so if it isn't resolvable on `PATH`, starting the process throws an unhandled exception on the background thread, which can terminate the whole app rather than failing quietly (see [Known Limitations](./api-reference/video-streamer.md#known-limitations)).
 2. **Did you select a folder that actually contains supported video files?** Only `.mp4`, `.mkv`, `.avi`, `.mov`, and `.flv` files directly inside the selected folder (not subfolders) are picked up.
 3. **Are the RTMP URL and stream key correct?** Double check for trailing spaces or an incorrect/expired stream key from your platform's dashboard.
 4. **Is your stream key valid for more than a few minutes?** Some platforms rotate/expire stream keys; regenerate one if needed.
