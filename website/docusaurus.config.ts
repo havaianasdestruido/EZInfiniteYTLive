@@ -14,13 +14,15 @@ const config: Config = {
     v4: true, // Improve compatibility with the upcoming Docusaurus v4
   },
 
-  // Set the production url of your site here
+  // The Pages workflow publishes this Docusaurus build under
+  // https://havaianasdestruido.github.io/EZInfiniteYTLive/docs/.
+  // Keep local development at the root while retaining correct production
+  // asset and route URLs for the project site.
   url: 'https://havaianasdestruido.github.io',
-  // Set the /<baseUrl>/ pathname under which your site is served.
-  // Using '/' keeps local dev / preview environments simple; if you deploy
-  // to GitHub Pages under https://<org>.github.io/EZInfiniteYTLive/, change
-  // this to '/EZInfiniteYTLive/' (and update links accordingly).
-  baseUrl: '/',
+  baseUrl:
+    process.env.DEPLOY_ENV === 'github-pages'
+      ? '/EZInfiniteYTLive/docs/'
+      : '/',
 
   // GitHub pages deployment config.
   organizationName: 'havaianasdestruido', // Usually your GitHub org/user name.
@@ -46,6 +48,9 @@ const config: Config = {
       'classic',
       {
         docs: {
+          // Docusaurus is mounted at /docs by the Pages workflow, so its
+          // internal docs routes must start at the Docusaurus site root.
+          routeBasePath: '/',
           sidebarPath: './sidebars.ts',
           editUrl:
             'https://github.com/havaianasdestruido/EZInfiniteYTLive/tree/main/website/',
@@ -92,15 +97,15 @@ const config: Config = {
           items: [
             {
               label: 'Introduction',
-              to: '/docs/intro',
+              to: '/intro',
             },
             {
               label: 'Getting Started',
-              to: '/docs/getting-started/installation',
+              to: '/getting-started/installation',
             },
             {
               label: 'API Reference',
-              to: '/docs/api-reference/video-streamer',
+              to: '/api-reference/video-streamer',
             },
           ],
         },

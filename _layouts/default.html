@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{{ site.description }}">
+    <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}</title>
+    <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container site-header__inner">
+        <a class="brand" href="{{ '/' | relative_url }}" aria-label="EZInfiniteYTLive home">
+          <span class="brand__mark" aria-hidden="true">▶</span>
+          <span>EZInfiniteYTLive</span>
+        </a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a href="{{ '/docs/' | relative_url }}">Documentation</a>
+          <a href="https://github.com/havaianasdestruido/EZInfiniteYTLive">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>{{ content }}</main>
+
+    <footer class="site-footer">
+      <div class="container site-footer__inner">
+        <span>EZInfiniteYTLive · FFmpeg-powered 24/7 streaming</span>
+        <a href="{{ '/docs/' | relative_url }}">Read the documentation</a>
+      </div>
+    </footer>
+  </body>
+</html>
