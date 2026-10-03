@@ -77,6 +77,13 @@ const config: Config = {
       },
       items: [
         {
+          // Link back to the Jekyll landing page published at the repo root
+          // (Docusaurus itself only serves the /docs subtree).
+          href: 'https://havaianasdestruido.github.io/EZInfiniteYTLive/',
+          label: 'Home',
+          position: 'left',
+        },
+        {
           type: 'docSidebar',
           sidebarId: 'tutorialSidebar',
           position: 'left',
