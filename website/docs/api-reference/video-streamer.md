@@ -112,16 +112,17 @@ The method executed on the background thread:
 2. Recursively lists files under `_videoFolder` (`SearchOption.AllDirectories`) whose extension (case-insensitively) is one of `_videoExtensions`.
 3. Reports an empty or inaccessible folder through `ErrorOccurred` and waits for a stop or a later scan. This also allows a video added after START to be picked up.
 4. Sorts the current snapshot by filename, or applies a Fisher-Yates shuffle when `_shuffle` is enabled.
-5. Runs each file once, skipping paths removed after the scan.
-6. Repeats from step 2 after the pass completes, so additions and removals are reflected without restarting the stream.
+5. Runs each file once, skipping paths removed after the scan. Each result is tracked so the worker knows whether at least one file streamed successfully.
+6. If every file fails and stopping has not been requested, waits briefly before retrying to avoid a tight failure loop.
+7. Repeats from step 2 after the pass completes, so additions and removals are reflected without restarting the stream.
 
 ### `RunFfmpeg`
 
 ```csharp
-private void RunFfmpeg(string inputFile, string ffmpegPath)
+private bool RunFfmpeg(string inputFile, string ffmpegPath)
 ```
 
-Builds and runs a single FFmpeg invocation for one file:
+Builds and runs a single FFmpeg invocation for one file. It returns `true` only when FFmpeg starts and exits with code `0`; startup, processing, and non-zero exit failures return `false` after reporting their diagnostics.
 
 ```csharp
 var args = $"-re -i \"{inputFile}\" -c copy -f flv \"{_rtmpUrl}\"";

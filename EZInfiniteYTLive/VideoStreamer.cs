@@ -261,6 +261,7 @@ namespace EZInfiniteYTLive
                     // This is a snapshot for one pass only. A new snapshot is taken
                     // after every pass, so additions and removals are observed while
                     // the stream is running.
+                    bool anyFilePlayedSuccessfully = false;
                     foreach (string file in files)
                     {
                         if (_stopRequested)
@@ -271,8 +272,14 @@ namespace EZInfiniteYTLive
                         if (!File.Exists(file))
                             continue;
 
-                        RunFfmpeg(file, resolvedPath);
+                        if (RunFfmpeg(file, resolvedPath))
+                            anyFilePlayedSuccessfully = true;
                     }
+
+                    // Avoid a tight retry loop when every file fails immediately
+                    // (for example, because of an unsupported codec or RTMP error).
+                    if (!anyFilePlayedSuccessfully && !_stopRequested)
+                        WaitForStop(1000);
                 }
             }
             catch (Exception ex)
@@ -320,7 +327,7 @@ namespace EZInfiniteYTLive
             }
         }
 
-        private void RunFfmpeg(string inputFile, string ffmpegPath)
+        private bool RunFfmpeg(string inputFile, string ffmpegPath)
         {
             // The outer loop is responsible for replaying a file. Running FFmpeg
             // once here prevents every file from being played twice per pass.
@@ -371,7 +378,7 @@ namespace EZInfiniteYTLive
                     if (!started)
                     {
                         ReportError("FFmpeg could not be started.", inputFile, null, null);
-                        return;
+                        return false;
                     }
 
                     process.BeginOutputReadLine();
@@ -399,12 +406,12 @@ namespace EZInfiniteYTLive
                 catch (Win32Exception ex)
                 {
                     ReportError("Unable to start FFmpeg: " + ex.Message, inputFile, null, ex);
-                    return;
+                    return false;
                 }
                 catch (Exception ex) when (ex is InvalidOperationException || ex is IOException)
                 {
                     ReportError("FFmpeg could not process the file: " + ex.Message, inputFile, null, ex);
-                    return;
+                    return false;
                 }
                 finally
                 {
@@ -432,6 +439,8 @@ namespace EZInfiniteYTLive
 
                     ReportError(message, inputFile, exitCode, null);
                 }
+
+                return started && exitCode == 0;
             }
         }
 

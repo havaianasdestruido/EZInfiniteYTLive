@@ -97,9 +97,10 @@ namespace EZInfiniteYTLive
             // VideoStreamer runs on a worker thread. Marshal the diagnostic to the
             // UI thread so the user can see failures without risking a cross-thread
             // WinForms exception.
+            object errorSource = sender;
             Action showError = () =>
             {
-                if (IsDisposed || Disposing)
+                if (IsDisposed || Disposing || !ReferenceEquals(_streamer, errorSource))
                     return;
 
                 string message = e.Message.Replace(Environment.NewLine, " ");
