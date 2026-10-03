@@ -21,7 +21,7 @@ The application window exposes the following controls (see [`Form1.Designer.cs`]
 | "STOP" button | `ForceStopButton` | Immediately stops streaming and kills the running FFmpeg process. |
 | "RandOrder?" radio | `ShuffleRadio` | Selects **shuffle/random** playback order. |
 | "AlphabeticOrder?" radio | `AlphabeticOrderRadio` | Selects **alphabetic** playback order (checked by default). |
-| Status label | `StatusLabel` | Shows the current status (`Idle`, `Selected: <path>`, `Streaming...`, `Stopped`). |
+| Status label | `StatusLabel` | Shows the current status (`Idle`, `Selected: <path>`, `Streaming...`, `Error: ...`, `Stopped`). |
 
 ## Step-by-step
 
@@ -35,12 +35,12 @@ Click **Choose Videos** and select a folder that contains **at least one** video
 
 The status label updates to show the selected path, e.g. `Selected: C:\Videos\LoopFolder`.
 
-:::caution
-If the selected folder contains **no** files with a supported extension, `StreamVideos()` finds an empty file list and returns immediately without ever starting FFmpeg. However, `StartButton_Click` has already updated the UI to the "Streaming..." state (status label, window title, **START** disabled, **STOP** enabled) before this is discovered, so the window will appear to be streaming even though nothing is actually being sent to the RTMP destination. Click **STOP** to reset the UI if this happens, and double-check the folder actually contains supported video files.
+:::note
+If the selected folder contains no supported files, the worker reports that condition in the status label and keeps checking. Add a supported video to the selected folder or one of its subfolders and it will be picked up without restarting the stream.
 :::
 
 :::tip
-Files are matched purely by name within the folder (non-recursive — subfolders are not scanned).
+Files are matched by extension throughout the selected folder and all of its subfolders. Adding or removing files while streaming takes effect on the next playlist pass.
 :::
 
 ### 2. Pick a playback order
@@ -48,8 +48,8 @@ Files are matched purely by name within the folder (non-recursive — subfolders
 - **AlphabeticOrder?** (default) — files are streamed in ascending alphabetical order by filename, then wraps back to the first file.
 - **RandOrder?** — enables shuffle mode.
 
-:::note Current build behavior
-In the current codebase, the `_shuffle` flag is tracked on `Form1`, but `VideoStreamer.StreamVideos()` always sorts files alphabetically (`OrderBy(f => f)`) before looping — the shuffle flag is not yet wired into `VideoStreamer`. See [`video-streamer.md`](../api-reference/video-streamer.md#known-limitations) for details. Keep this in mind if you select **RandOrder?** and still observe alphabetic playback.
+:::note
+**RandOrder?** uses a Fisher-Yates shuffle for each complete playlist pass. **AlphabeticOrder?** sorts each pass by filename.
 :::
 
 ### 3. Enter your RTMP URL and stream key
@@ -65,9 +65,10 @@ Click **START**. The app:
 
 1. Validates that a folder was selected and that it still exists.
 2. Validates that both the RTMP URL and stream key are non-empty.
-3. Builds the full RTMP destination URL.
-4. Creates a `VideoStreamer` and calls `StartStreaming()`, which spins up a background thread that runs FFmpeg against each video file in sequence.
-5. Updates the window title and status label to `Streaming...`, disables **START**, and enables **STOP**.
+3. Validates and resolves FFmpeg from its configured path or the system `PATH`.
+4. Builds the full RTMP destination URL.
+5. Creates a `VideoStreamer` with the selected playback order and calls `StartStreaming()`, which spins up a background thread that runs FFmpeg against each video file in sequence.
+6. Updates the window title and status label to `Streaming...`, disables **START**, and enables **STOP**. FFmpeg or folder errors are reported in the status label.
 
 ### 5. Stop streaming
 
@@ -93,7 +94,7 @@ Any RTMP(S)-compatible service works. A few examples:
 
 ## Tips for reliable 24/7 streaming
 
-- Prefer source files already encoded as **H.264 video / AAC audio** inside a container FFmpeg can remux cleanly to FLV (the app streams with `-c copy`, i.e. no re-encoding — see [`RunFfmpeg`](../api-reference/video-streamer.md#runffmpegstring-inputfile)). Mixed/incompatible codecs across files can cause FFmpeg to fail for some files in the folder.
+- Prefer source files already encoded as **H.264 video / AAC audio** inside a container FFmpeg can remux cleanly to FLV (the app streams with `-c copy`, i.e. no re-encoding — see [`RunFfmpeg`](../api-reference/video-streamer.md#runffmpeg)). Mixed/incompatible codecs across files can cause FFmpeg to fail for some files in the folder.
 - Keep the machine running the app online and awake — if the process/computer stops, the stream stops.
 - Because `-c copy` is used, the video resolution/framerate of each file determines the live stream's characteristics for its duration; wildly inconsistent source files may cause hiccups on some platforms (YouTube generally tolerates this well).
 - Test with a short clip and a private/unlisted stream first before going live publicly.

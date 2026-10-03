@@ -12,37 +12,61 @@ sidebar_position: 3
 
 `VideoStreamer` is the core engine of the application. It has no dependency on WinForms and could, in principle, be reused from a console app or service. It is responsible for:
 
-1. Enumerating supported video files in a folder.
+1. Enumerating supported video files in a folder and its subfolders.
 2. Running FFmpeg against each file, one at a time, targeting an RTMP URL.
-3. Looping back to the first file once the last one finishes, forever, until stopped.
+3. Re-scanning the folder after every pass so files added or removed while streaming are reflected without a restart.
+4. Looping back to the first file once the last one finishes, forever, until stopped.
 
 ## Fields
 
 | Field | Type | Description |
 |---|---|---|
 | `_ffmpegPath` | `readonly string` | Path or command name used to launch FFmpeg (e.g. `"ffmpeg.exe"`). |
-| `_videoFolder` | `readonly string` | Folder to scan for video files. |
+| `_videoFolder` | `readonly string` | Root folder to scan recursively for video files. |
 | `_rtmpUrl` | `readonly string` | Full destination RTMP URL (server + stream key). |
+| `_shuffle` | `readonly bool` | Whether each pass should be randomized. |
 | `_videoExtensions` | `readonly string[]` | Supported file extensions: `.mp4`, `.mkv`, `.avi`, `.mov`, `.flv`. |
-| `_streamThread` | `Thread` | The background thread running the infinite streaming loop. |
+| `_streamThread` | `Thread` | The background thread running the streaming loop. |
 | `_stopRequested` | `bool` | Cooperative cancellation flag checked by the streaming loop. |
 | `_ffmpegProcess` | `Process` | Reference to the currently running FFmpeg process, so it can be killed on demand. |
 
 ## Constructor
 
-### `VideoStreamer(string ffmpegPath, string videoFolder, string rtmpUrl)`
+### `VideoStreamer(string ffmpegPath, string videoFolder, string rtmpUrl, bool shuffle)`
 
 ```csharp
-public VideoStreamer(string ffmpegPath, string videoFolder, string rtmpUrl)
+public VideoStreamer(string ffmpegPath, string videoFolder, string rtmpUrl, bool shuffle)
 ```
 
-Stores the three required pieces of configuration. Performs no validation or I/O itself — validation happens in the caller ([`Form1.StartButton_Click`](./form1.md#startbutton_click)).
+Stores the streaming configuration. The three-argument constructor is retained for callers that want alphabetic ordering and is equivalent to passing `false` for `shuffle`.
 
 | Parameter | Description |
 |---|---|
-| `ffmpegPath` | Executable name/path for FFmpeg. |
-| `videoFolder` | Directory containing the video files to stream. |
+| `ffmpegPath` | Executable name/path for FFmpeg. It may be an absolute path, a relative path, or a command available on `PATH`. |
+| `videoFolder` | Root directory containing the video files to stream. Subfolders are scanned too. |
 | `rtmpUrl` | Fully-formed RTMP destination, e.g. `rtmp://a.rtmp.youtube.com/live2/<stream-key>`. |
+| `shuffle` | When `true`, uses a Fisher-Yates shuffle for every complete pass; otherwise files are sorted by filename. |
+
+### `TryResolveFfmpegPath`
+
+```csharp
+public static bool TryResolveFfmpegPath(
+    string ffmpegPath,
+    out string resolvedPath,
+    out string errorMessage)
+```
+
+Checks an explicit path, the current directory, and the system `PATH`, returning an absolute path when FFmpeg is found. `Form1` uses this before disabling the START button, so a missing FFmpeg installation is reported with a message box instead of surfacing as a background-thread crash. `StreamVideos()` performs the same check as a defensive measure for non-UI callers.
+
+## Events
+
+### `ErrorOccurred`
+
+```csharp
+public event EventHandler<VideoStreamerErrorEventArgs> ErrorOccurred;
+```
+
+Raised when the folder cannot be scanned, FFmpeg cannot be started, or FFmpeg exits with a non-zero exit code. The event includes the message, input file, optional exit code, and optional exception. The message is also sent to `Trace`, and the WinForms client displays a shortened version in `StatusLabel`.
 
 ## Public methods
 
@@ -52,10 +76,11 @@ Stores the three required pieces of configuration. Performs no validation or I/O
 public void StartStreaming()
 ```
 
-Starts the infinite streaming loop on a dedicated background thread.
+Starts the streaming loop on a dedicated background thread.
 
-- If a thread is already running (`_streamThread != null && _streamThread.IsAlive`), this is a no-op — calling `StartStreaming()` twice on the same instance without stopping first has no additional effect.
-- Otherwise, resets `_stopRequested = false` and starts a new `Thread` targeting `StreamVideos()`, marked `IsBackground = true` (so it won't keep the process alive on its own if the app tries to exit).
+- If a thread is already running (`_streamThread != null && _streamThread.IsAlive`), this is a no-op.
+- Otherwise, resets the stop signal and starts a background thread targeting `StreamVideos()`.
+- FFmpeg path and folder errors are reported through `ErrorOccurred`; they do not escape from the worker and terminate the application.
 
 ### `StopStreaming()`
 
@@ -63,34 +88,15 @@ Starts the infinite streaming loop on a dedicated background thread.
 public void StopStreaming()
 ```
 
-Requests the loop to stop and force-terminates the active FFmpeg process:
-
-```csharp
-_stopRequested = true;
-try
-{
-    if (_ffmpegProcess != null && !_ffmpegProcess.HasExited)
-    {
-        _ffmpegProcess.Kill();
-    }
-}
-catch { }
-```
-
-- Setting `_stopRequested = true` requests that the loop exit after the current `RunFfmpeg` call returns — it does **not** prevent an iteration that already passed the `while (!_stopRequested)` check from starting a new `RunFfmpeg`/FFmpeg process.
-- Killing the process is what makes stopping **immediate** rather than waiting for the current file to finish playing — without this, `WaitForExit()` inside `RunFfmpeg` would block until the file naturally ends. However, this only takes effect once `_ffmpegProcess` has been (re)assigned to the process that's actually running; if `StopStreaming()` is called in the brief window after a loop iteration starts but before `RunFfmpeg` has assigned the new `Process` to `_ffmpegProcess`, the kill can miss it (acting on the previous, already-exited process instead), and that file will run to completion before the loop observes `_stopRequested` on its next check.
-- Exceptions from `Kill()` (e.g. the process already exited in a race) are intentionally swallowed.
+Requests the loop to stop, signals its wait handle, and force-terminates the active FFmpeg process. The worker is joined briefly so disposal does not leave an old process racing a new stream. Stopping suppresses the non-zero exit diagnostic that naturally results from killing FFmpeg.
 
 ### `Dispose()`
 
 ```csharp
 public void Dispose()
-{
-    StopStreaming();
-}
 ```
 
-Implements `IDisposable` by delegating to `StopStreaming()`, so `VideoStreamer` instances can be safely cleaned up with a `using` block or explicit `Dispose()` call (as `Form1` does).
+Stops the worker and releases its cancellation signal. `Form1` calls this when STOP is clicked and when the window closes.
 
 ## Private methods
 
@@ -100,50 +106,42 @@ Implements `IDisposable` by delegating to `StopStreaming()`, so `VideoStreamer` 
 private void StreamVideos()
 ```
 
-The method executed on the background thread (`_streamThread`):
+The method executed on the background thread:
 
-1. Lists files directly inside `_videoFolder` (non-recursive) whose extension (case-insensitively) is one of `_videoExtensions`.
-2. Sorts them with `OrderBy(f => f)` — i.e. **alphabetically by full path**.
-3. If no matching files are found, returns immediately (no stream starts).
-4. Otherwise, loops `while (!_stopRequested)`:
-   - Plays the file at the current index via `RunFfmpeg(file)`.
-   - Advances `idx = (idx + 1) % files.Count`, wrapping back to `0` after the last file — this is what makes the stream "infinite".
+1. Validates that the configured FFmpeg executable can be resolved.
+2. Recursively lists files under `_videoFolder` (`SearchOption.AllDirectories`) whose extension (case-insensitively) is one of `_videoExtensions`.
+3. Reports an empty or inaccessible folder through `ErrorOccurred` and waits for a stop or a later scan. This also allows a video added after START to be picked up.
+4. Sorts the current snapshot by filename, or applies a Fisher-Yates shuffle when `_shuffle` is enabled.
+5. Runs each file once, skipping paths removed after the scan. Each result is tracked so the worker knows whether at least one file streamed successfully.
+6. If every file fails and stopping has not been requested, waits briefly before retrying to avoid a tight failure loop.
+7. Repeats from step 2 after the pass completes, so additions and removals are reflected without restarting the stream.
 
-### `RunFfmpeg(string inputFile)`
+### `RunFfmpeg`
 
 ```csharp
-private void RunFfmpeg(string inputFile)
+private bool RunFfmpeg(string inputFile, string ffmpegPath)
 ```
 
-Builds and runs a single FFmpeg invocation for one file:
+Builds and runs a single FFmpeg invocation for one file. It returns `true` only when FFmpeg starts and exits with code `0`; startup, processing, and non-zero exit failures return `false` after reporting their diagnostics.
 
 ```csharp
-var args = $"-re -stream_loop 1 -i \"{inputFile}\" -c copy -f flv \"{_rtmpUrl}\"";
+var args = $"-re -i \"{inputFile}\" -c copy -f flv \"{_rtmpUrl}\"";
 ```
 
 | Flag | Meaning |
 |---|---|
 | `-re` | Read input at its native frame rate, which is required for live-streaming (rather than FFmpeg processing the file as fast as possible). |
-| `-stream_loop 1` | Loop the single input file one extra time (i.e. play it twice) before FFmpeg's own process exits. |
 | `-i "<inputFile>"` | The current video file. |
 | `-c copy` | Stream copy — remux without re-encoding either the video or audio stream, keeping CPU usage low. |
 | `-f flv` | Force FLV container/muxer, required for RTMP. |
 | `"<rtmpUrl>"` | The destination RTMP URL (server + stream key). |
 
+Each file is played once by FFmpeg. The outer playlist loop provides the continuous replay, so a file is not accidentally played twice per pass.
+
 Execution details:
 
-- Uses `ProcessStartInfo` with `UseShellExecute = false`, `RedirectStandardOutput = true`, `RedirectStandardError = true`, and `CreateNoWindow = true` — i.e. FFmpeg runs hidden, with its stdout/stderr redirected (and read asynchronously via `BeginOutputReadLine()` / `BeginErrorReadLine()`, though the output isn't currently logged anywhere by the app).
+- Uses `ProcessStartInfo` with `UseShellExecute = false`, `RedirectStandardOutput = true`, `RedirectStandardError = true`, and `CreateNoWindow = true`.
+- Drains FFmpeg output asynchronously and collects stderr for a failed invocation. A non-zero exit code is sent through `ErrorOccurred` with the FFmpeg diagnostic text.
 - The started `Process` is stored in `_ffmpegProcess` so that `StopStreaming()` can kill it.
-- `process.WaitForExit()` blocks the background thread until FFmpeg exits (either because the file finished playing twice, or because it was killed by `StopStreaming()`).
+- `process.WaitForExit()` blocks only the background thread until FFmpeg exits; it does not block the WinForms UI.
 - The `Process` object is wrapped in a `using` block, ensuring its handles are released once it exits.
-
-## Known limitations
-
-These are useful starting points if you want to [contribute](../contributing.md):
-
-1. **Shuffle is not implemented in `VideoStreamer`.** `Form1._shuffle` is tracked but never passed to `VideoStreamer`'s constructor or used in `StreamVideos()` — files are always played in alphabetical order (`OrderBy(f => f)`). To honor "RandOrder?", `VideoStreamer` would need to accept a shuffle flag and (e.g.) use `OrderBy(f => Guid.NewGuid())` or a `Random`-based shuffle instead of/alongside the alphabetic sort.
-2. **No folder change detection.** The file list is captured once per `StreamVideos()` call (i.e., once per `StartStreaming()` call); adding/removing files from the folder mid-stream has no effect until the stream is stopped and restarted.
-3. **No logging/surfacing of FFmpeg errors.** `RunFfmpeg` redirects FFmpeg's stdout/stderr but doesn't log, display, or otherwise react to it — if FFmpeg fails immediately for a given file (e.g. unsupported codec), the loop simply advances to the next file with no user-visible diagnostic.
-4. **`-stream_loop 1` plays each file twice per cycle.** Combined with the outer `while` loop in `StreamVideos()`, each file is effectively played twice before the file list advances. This may or may not be intentional; worth confirming against your expected behavior.
-5. **Non-recursive folder scan.** Subfolders of the selected directory are ignored.
-6. **No FFmpeg path validation.** If FFmpeg isn't installed or isn't on `PATH`, `Process.Start()` will throw a `Win32Exception`, which is not currently caught around `RunFfmpeg`/`StreamVideos`. Since there's no global unhandled-exception handling in `Program`/`Form1`, this exception on the background thread can terminate the entire application rather than failing with a user-facing error message.

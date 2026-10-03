@@ -18,8 +18,8 @@ sidebar_position: 2
 |---|---|---|---|
 | `_videoFolder` | `string` | `string.Empty` | Absolute path to the folder of videos chosen via **Choose Videos**. |
 | `_streamer` | `VideoStreamer` | `null` | The currently active streaming engine instance, or `null` when idle. |
-| `_shuffle` | `bool` | `false` | Tracks whether the user selected **RandOrder?**. *(See [Known Limitations](./video-streamer.md#known-limitations) — this flag is currently not consumed by `VideoStreamer`.)* |
-| `_ffmpegPath` | `string` | `"ffmpeg.exe"` | Path/command used to invoke FFmpeg. Comment in source: `// Adjust if needed`. Relies on `ffmpeg.exe` being resolvable via the system `PATH`. |
+| `_shuffle` | `bool` | `false` | Tracks whether the user selected **RandOrder?** and passes that choice to `VideoStreamer`. |
+| `_ffmpegPath` | `string` | `"ffmpeg.exe"` | Path/command used to invoke FFmpeg. Comment in source: `// Adjust if needed`. It is resolved from the current directory or system `PATH` before streaming starts. |
 
 ## Designer-generated controls
 
@@ -59,7 +59,7 @@ public Form1()
 
 - Calls `InitializeComponent()` to build the designer-defined UI.
 - Initializes the status label and window title to reflect an idle state.
-- Registers a `FormClosed` handler that disposes the active `VideoStreamer` when the window is closed. Disposal requests a stop (`_stopRequested = true`) and kills whichever FFmpeg process is already assigned to `_ffmpegProcess` at that moment — see [`VideoStreamer.StopStreaming()`](./video-streamer.md#stopstreaming) for the startup race that means this doesn't *guarantee* an in-flight FFmpeg process is cleaned up if disposal happens to race with a new file starting.
+- Registers a `FormClosed` handler that disposes the active `VideoStreamer` when the window is closed. Disposal requests a stop, signals the worker, kills the active FFmpeg process, and briefly waits for the worker to finish.
 - Defaults the playback order to **alphabetic** by checking `AlphabeticOrderRadio`.
 
 ## Event handlers
@@ -90,9 +90,11 @@ Validates input and starts a stream:
    string fullRtmp = rtmpUrl.EndsWith("/") ? rtmpUrl + streamKey : rtmpUrl + "/" + streamKey;
    ```
 5. Disposes any pre-existing `_streamer` (defensive cleanup).
-6. Constructs a new `VideoStreamer(_ffmpegPath, _videoFolder, fullRtmp)`.
-7. Updates UI state: `StatusLabel.Text = "Streaming..."`, disables `StartButton`, enables `ForceStopButton`, and updates the window title.
-8. Calls `_streamer.StartStreaming()` to begin the background loop.
+6. Resolves `_ffmpegPath` through `VideoStreamer.TryResolveFfmpegPath`; if FFmpeg is missing, shows an error and does not start a worker.
+7. Constructs a new `VideoStreamer(resolvedFfmpegPath, _videoFolder, fullRtmp, _shuffle)`.
+8. Subscribes to `ErrorOccurred` so background FFmpeg and folder errors are shown in the status label.
+9. Updates UI state: `StatusLabel.Text = "Streaming..."`, disables `StartButton`, enables `ForceStopButton`, and updates the window title.
+10. Calls `_streamer.StartStreaming()` to begin the background loop.
 
 ### `ForceStopButton_Click`
 
@@ -118,9 +120,7 @@ Mutually-exclusive radio buttons (standard WinForms `RadioButton` group behavior
 - Checking `ShuffleRadio` sets `_shuffle = true`.
 - Checking `AlphabeticOrderRadio` sets `_shuffle = false`.
 
-:::caution
-As noted in [Usage Guide](../getting-started/usage.md#2-pick-a-playback-order), `_shuffle` is currently **not passed into** `VideoStreamer`, so toggling these radios does not yet change actual playback order. This is a good first contribution — see [Contributing](../contributing.md).
-:::
+The selected value is passed to each new `VideoStreamer`, so it controls the order used for every playlist pass.
 
 ## Lifecycle summary
 
