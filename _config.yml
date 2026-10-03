@@ -1,0 +1,21 @@
+title: EZInfiniteYTLive
+description: Easy 24/7 looping RTMP livestreams, powered by FFmpeg.
+url: https://havaianasdestruido.github.io
+baseurl: /EZInfiniteYTLive
+
+# The repository root is the Jekyll site. The Docusaurus build is published
+# separately at /docs by .github/workflows/pages.yml.
+markdown: kramdown
+kramdown:
+  input: GFM
+
+exclude:
+  - .github
+  - EZInfiniteYTLive.sln
+  - website
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - README.md
+  - LICENSE.txt

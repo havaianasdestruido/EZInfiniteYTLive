@@ -1,0 +1,186 @@
+:root {
+  --ink: #12231d;
+  --muted: #52635b;
+  --green: #1e7a4a;
+  --green-dark: #125d36;
+  --mint: #e9f7ee;
+  --yellow: #ffe35c;
+  --line: #dce9df;
+  --white: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: #fbfdfb;
+  font: 16px/1.65 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+a { color: var(--green-dark); font-weight: 650; }
+a:hover { color: var(--green); }
+
+.container {
+  width: min(1120px, calc(100% - 40px));
+  margin: 0 auto;
+}
+
+.site-header {
+  background: var(--white);
+  border-bottom: 1px solid var(--line);
+}
+
+.site-header__inner,
+.site-footer__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 72px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-size: 1.08rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.brand__mark {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  color: var(--ink);
+  background: var(--yellow);
+  border-radius: 9px;
+  font-size: .8rem;
+}
+
+.site-nav { display: flex; gap: 24px; }
+.site-nav a { text-decoration: none; }
+
+.hero {
+  overflow: hidden;
+  padding: clamp(64px, 10vw, 120px) 0 96px;
+  background: radial-gradient(circle at 80% 20%, #d9f2df 0, transparent 34%), linear-gradient(135deg, #effbf2 0%, #ffffff 64%);
+  border-bottom: 1px solid var(--line);
+}
+
+.eyebrow {
+  margin: 0 0 16px;
+  color: var(--green-dark);
+  font-size: .82rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  max-width: 760px;
+  margin: 0;
+  font-size: clamp(2.7rem, 7vw, 5.7rem);
+  line-height: 1.02;
+  letter-spacing: -.065em;
+}
+
+.hero__lead {
+  max-width: 650px;
+  margin: 26px 0 0;
+  color: var(--muted);
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+}
+
+.actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+
+.button {
+  display: inline-block;
+  padding: 11px 19px;
+  border: 2px solid var(--green-dark);
+  border-radius: 8px;
+  color: var(--white);
+  background: var(--green-dark);
+  font-weight: 750;
+  text-decoration: none;
+  transition: transform .15s ease, background .15s ease;
+}
+
+.button:hover {
+  color: var(--white);
+  background: var(--green);
+  transform: translateY(-1px);
+}
+
+.button--secondary { color: var(--green-dark); background: transparent; }
+.button--secondary:hover { color: var(--green-dark); background: var(--mint); }
+
+.section { padding: 82px 0; }
+.section--tinted { background: var(--mint); }
+.section h2 { margin: 0 0 14px; font-size: clamp(1.8rem, 3vw, 2.5rem); letter-spacing: -.035em; }
+.section__intro { max-width: 700px; margin: 0 0 36px; color: var(--muted); }
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.feature {
+  padding: 26px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(18, 35, 29, .04);
+}
+
+.feature__icon { display: block; margin-bottom: 14px; font-size: 2rem; }
+.feature h3 { margin: 0 0 8px; font-size: 1.15rem; }
+.feature p { margin: 0; color: var(--muted); }
+
+.workflow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  margin-top: 34px;
+  padding: 28px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.workflow__step { display: flex; gap: 14px; }
+.workflow__number {
+  flex: 0 0 auto;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  color: var(--white);
+  background: var(--green);
+  border-radius: 50%;
+  font-weight: 800;
+}
+.workflow h3 { margin: 0 0 4px; font-size: 1rem; }
+.workflow p { margin: 0; color: var(--muted); }
+
+.site-footer {
+  color: var(--muted);
+  background: #f1f6f2;
+  border-top: 1px solid var(--line);
+  font-size: .9rem;
+}
+.site-footer a { white-space: nowrap; }
+
+@media (max-width: 760px) {
+  .site-header__inner, .site-footer__inner { align-items: flex-start; flex-direction: column; gap: 10px; padding: 18px 0; }
+  .site-nav { gap: 16px; }
+  .feature-grid, .workflow { grid-template-columns: 1fr; }
+  .section { padding: 60px 0; }
+}
