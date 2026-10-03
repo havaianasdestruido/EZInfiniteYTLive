@@ -52,6 +52,13 @@ jobs:
           source: ./
           destination: ./_site
 
+      # actions/jekyll-build-pages runs in a Docker container as root, so
+      # ./_site is owned by root when the container exits. The runner user
+      # cannot write into it (the previous "mkdir _site/docs" step failed with
+      # "Permission denied" because of this), so restore ownership first.
+      - name: Restore ownership of the Jekyll output
+        run: sudo chown -R "$(id -u):$(id -g)" ./_site
+
       - name: Publish Docusaurus only at /docs
         run: |
           rm -rf _site/docs
