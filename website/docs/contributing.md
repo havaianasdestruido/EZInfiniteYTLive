@@ -16,14 +16,12 @@ EZInfiniteYTLive is a small project, which makes it a great candidate for first-
 
 ## Suggested first contributions
 
-Based on the [Known Limitations](./api-reference/video-streamer.md#known-limitations) of `VideoStreamer` and the [CI/CD gaps](./ci-cd.md#what-the-pipeline-does-not-currently-do):
+The core playback behaviors are implemented in `VideoStreamer`; useful next contributions include:
 
-- **Wire up shuffle mode.** Pass `Form1._shuffle` into `VideoStreamer`'s constructor and use it inside `StreamVideos()` to randomize file order (e.g. shuffle once per full pass, or re-shuffle every cycle).
-- **Surface FFmpeg errors in the UI.** Read the redirected stdout/stderr in `RunFfmpeg` and show failures (e.g. in `StatusLabel` or a log panel) instead of silently moving to the next file.
 - **Persist settings.** Use the already-scaffolded `Properties/Settings.settings` to remember the last-used video folder, RTMP URL, and FFmpeg path between sessions.
 - **Make the FFmpeg path configurable from the UI**, rather than hardcoded in `Form1._ffmpegPath`.
-- **Add a unit test project** for pure-logic pieces (e.g. file discovery/sorting logic extracted from `VideoStreamer.StreamVideos`) and wire it into the GitHub Actions workflow.
-- **Add recursive folder scanning** as an opt-in toggle.
+- **Add a unit test project** for file discovery, ordering, error reporting, and cancellation, then wire it into the GitHub Actions workflow.
+- **Improve diagnostics.** Add a dedicated log panel or export `Trace` diagnostics to a file for long-running streams.
 - **Publish build artifacts** from CI (e.g. via `actions/upload-artifact`) so testers can grab a build without compiling locally.
 
 ## Code style notes
